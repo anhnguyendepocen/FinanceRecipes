@@ -1,0 +1,320 @@
+<html>
+
+<head>
+<link rel="stylesheet" href="assets/css/main.css" />
+<style type="text/css">
+.knitr .inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.rimage .left {
+  text-align: left;
+}
+.rimage .right {
+  text-align: right;
+}
+.rimage .center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+<title>Finance Recipes - Quandl</title>
+
+</head>
+
+<body>
+    <!-- Header -->
+      <header id="header">
+        <h1><a href="index.html">Quandl API <span>- Finance Recipes</span></a></h1>
+        <a href="#menu">Menu</a>
+      </header>
+
+    <!-- Menu -->
+      <nav id="menu">
+        <ul class="links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="academicCode.html">Recipes</a></li>
+          <li><a href="snippets.html">Snippets</a></li>
+        </ul>
+      </nav>
+
+<h2> Using Quandl's API </h2>
+<article id="main">
+  <section class="wrapper">
+    <div class="inner">
+<p>I am a huge fan of Quandl's API for downloading data directly into R. (This is not sponsored in any way by Quandl and I receive no renumeration from them. I'm just a big fan) No more downloads followed by read.table()!  While there are some other R libraries that do allow you to pull in some data like Quantmod or PerformanceAnalytics, none of them are as complete as Quandl.  There is nearly every piece of data available from them that you might need to build a trading strategy.  Some of them are free (like Yahoo Finance, Federal Reserve, Fama-French, SEC filings, etc) and there are hoards of other premium databases, including some interesting ones and research quality data.  While Quandl's documentation is pretty good (<a href="https://www.quandl.com/help/r">Quandl R API</a>), there are a couple neat things I found and thought I would share.</p>
+
+<p>The main thing I find impressive about the API is that there is only one function - Quandl().  So, here goes, first install and load the Quandl library. </p>
+<div class="chunk" id="unnamed-chunk-1"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#install.packages(&quot;Quandl&quot;)</span>
+<span class="hl kwd">library</span><span class="hl std">(</span><span class="hl str">&quot;Quandl&quot;</span><span class="hl std">)</span>
+</pre></div>
+<div class="message"><pre class="knitr r">## Loading required package: xts
+</pre></div>
+<div class="message"><pre class="knitr r">## Loading required package: zoo
+</pre></div>
+<div class="message"><pre class="knitr r">## 
+## Attaching package: 'zoo'
+</pre></div>
+<div class="message"><pre class="knitr r">## The following objects are masked from 'package:base':
+## 
+##     as.Date, as.Date.numeric
+</pre></div>
+</div></div>
+
+<p>This will get us all loaded up and ready to do some work pulling down some data. We will start by getting all the stock data on Apple.  The only argument necessary to pass is the "Database/Dataset" which is the first argument.  At first the database/dataset thing threw me off, but think about the Database as where you are pulling from (i.e. Yahoo Finance, SEC, Federal Reserve, etc) and the Dataset being the smaller piece of data you are looking for.  For example, in the code below we are pulling out from the "WIKI"" Database(claimed by Quandl to be the most accurate of the free databases) with the dataset being "AAPL"</p>
+
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">aaplData</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(</span><span class="hl str">&quot;WIKI/AAPL&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">head</span><span class="hl std">(aaplData)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##         Date  Open    High    Low  Close   Volume Ex-Dividend Split Ratio
+## 1 2016-02-19 96.00 96.7599 95.800 96.040 34013144           0           1
+## 2 2016-02-18 98.84 98.8900 96.091 96.260 38165170           0           1
+## 3 2016-02-17 96.67 98.2100 96.150 98.120 44194001           0           1
+## 4 2016-02-16 95.02 96.8500 94.610 96.555 46721854           0           1
+## 5 2016-02-12 94.19 94.5000 93.010 93.990 39956269           0           1
+## 6 2016-02-11 93.79 94.7200 92.590 93.700 49557462           0           1
+##   Adj. Open Adj. High Adj. Low Adj. Close Adj. Volume
+## 1     96.00   96.7599   95.800     96.040    34013144
+## 2     98.84   98.8900   96.091     96.260    38165170
+## 3     96.67   98.2100   96.150     98.120    44194001
+## 4     95.02   96.8500   94.610     96.555    46721854
+## 5     94.19   94.5000   93.010     93.990    39956269
+## 6     93.79   94.7200   92.590     93.700    49557462
+</pre></div>
+</div></div>
+
+<p> Naturally, if you are wanting to pull quite a bit of data, you will want to cut down the amount of data that gets downloaded.  So, lets assume that we just want the Adjusted Price variable (the pull will always include date) we will append ".11" to the "WIKI/AAPL" data call, saying that we want the eleventh column, excluding the date.
+
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">aaplData11</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(</span><span class="hl str">&quot;WIKI/AAPL.11&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">head</span><span class="hl std">(aaplData11)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##         Date Adj. Close
+## 1 2016-02-19     96.040
+## 2 2016-02-18     96.260
+## 3 2016-02-17     98.120
+## 4 2016-02-16     96.555
+## 5 2016-02-12     93.990
+## 6 2016-02-11     93.700
+</pre></div>
+</div></div>
+
+<p>So this brings up a little difference in how the data comes down.  Below you will see that it is the 12th column that is named, Adj.Close, not the eleventh that we just asked for above.  This is because the calls from Quandl will exclude the date from the data call, but then append it to the dataframe once it is loaded in your workspace. </p>
+<div class="chunk" id="unnamed-chunk-5"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">names</span><span class="hl std">(aaplData)[</span><span class="hl num">12</span><span class="hl std">]</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] &quot;Adj. Close&quot;
+</pre></div>
+</div></div>
+
+<p>Another neat little feature is that you can ask Quandl to do a few simple tasks for you so that you do not have to code them up manually when after you have downloaded the data.  I can add a number of arguments to specify how I want the data downloaded such as the date range: </p>
+<div class="chunk" id="unnamed-chunk-6"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">aaplData</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(</span><span class="hl str">&quot;WIKI/AAPL.11&quot;</span><span class="hl std">,</span> <span class="hl kwc">start_date</span><span class="hl std">=</span><span class="hl str">&quot;2005-01-01&quot;</span><span class="hl std">,</span> <span class="hl kwc">end_date</span><span class="hl std">=</span><span class="hl str">&quot;2015-12-31&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">head</span><span class="hl std">(aaplData)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##         Date Adj. Close
+## 1 2015-12-31   104.6964
+## 2 2015-12-30   106.7454
+## 3 2015-12-29   108.1578
+## 4 2015-12-28   106.2481
+## 5 2015-12-24   107.4516
+## 6 2015-12-23   108.0384
+</pre></div>
+</div></div>
+
+<p>That is nice, but not that much of time saver.  The ones that seem to save me a large amount of time are changing the frequency of when the data is computed.  So we change the data to be "weekly"|"monthly"|"quarterly"|"annual" depending on what we want with the "collapse=" argument and transform the data depending on what we want to do with the data ("diff"|"rdiff"|"normalize"|"cumulative"). Below I am pulling down two dataframes and then merging them so you can see monthly prices as well as monthly returns.</p>
+<div class="chunk" id="unnamed-chunk-7"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#Downloading Monthly prices</span>
+<span class="hl std">aaplDataMonthly</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(</span><span class="hl str">&quot;WIKI/AAPL.11&quot;</span><span class="hl std">,</span> <span class="hl kwc">start_date</span><span class="hl std">=</span><span class="hl str">&quot;2005-01-01&quot;</span><span class="hl std">,</span> <span class="hl kwc">end_date</span><span class="hl std">=</span><span class="hl str">&quot;2015-12-31&quot;</span><span class="hl std">,</span> <span class="hl kwc">collapse</span> <span class="hl std">=</span> <span class="hl str">&quot;monthly&quot;</span><span class="hl std">)</span>
+<span class="hl std">aaplDataRdiff</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(</span><span class="hl str">&quot;WIKI/AAPL.11&quot;</span><span class="hl std">,</span> <span class="hl kwc">start_date</span><span class="hl std">=</span><span class="hl str">&quot;2005-01-01&quot;</span><span class="hl std">,</span> <span class="hl kwc">end_date</span><span class="hl std">=</span><span class="hl str">&quot;2015-12-31&quot;</span><span class="hl std">,</span> <span class="hl kwc">collapse</span> <span class="hl std">=</span> <span class="hl str">&quot;monthly&quot;</span><span class="hl std">,</span> <span class="hl kwc">transform</span><span class="hl std">=</span><span class="hl str">&quot;rdiff&quot;</span><span class="hl std">)</span>
+<span class="hl std">aaplData</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">merge</span><span class="hl std">(aaplDataMonthly, aaplDataRdiff,</span> <span class="hl kwc">by</span> <span class="hl std">=</span><span class="hl str">&quot;Date&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">head</span><span class="hl std">(aaplData)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##         Date Adj. Close.x Adj. Close.y
+## 1 2005-02-28     5.935191   0.16671001
+## 2 2005-03-31     5.513138  -0.07111012
+## 3 2005-04-30     4.770909  -0.13462923
+## 4 2005-05-31     5.260344   0.10258735
+## 5 2005-06-30     4.870137  -0.07417887
+## 6 2005-07-31     5.642797   0.15865254
+</pre></div>
+</div></div>
+<p> You can see that this data side by side shows the percent change (P1-P0)/P0 and doesn't rely on you to transform them yourself and possibly create errors. (as a side note, the dates inverted through merge() which is why 2005 is on top rather than 2015)</p>
+
+<p>Let's go through a scenario where we need more than one stock (no idea when that might happen), there is an easy way to pull out multiple datasets in one call.  It is also much faster because it is wrapped in one function.  We just create a vector of calls and pass into the Quandl function. Below we are pulling data on Apple, Microsoft, and General Electric.</p>
+<div class="chunk" id="unnamed-chunk-8"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#Downloading Monthly prices</span>
+<span class="hl std">stockDataMonthly</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(</span><span class="hl kwd">c</span><span class="hl std">(</span><span class="hl str">&quot;WIKI/AAPL.11&quot;</span><span class="hl std">,</span><span class="hl str">&quot;WIKI/MSFT.11&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;WIKI/GE.11&quot;</span><span class="hl std">),</span> <span class="hl kwc">collapse</span> <span class="hl std">=</span> <span class="hl str">&quot;monthly&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">head</span><span class="hl std">(stockDataMonthly)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##         Date WIKI.AAPL - Adj. Close WIKI.MSFT - Adj. Close
+## 1 1962-01-31                     NA                     NA
+## 2 1962-02-28                     NA                     NA
+## 3 1962-03-31                     NA                     NA
+## 4 1962-04-30                     NA                     NA
+## 5 1962-05-31                     NA                     NA
+## 6 1962-06-30                     NA                     NA
+##   WIKI.GE - Adj. Close
+## 1            0.4546313
+## 2            0.4523279
+## 3            0.4659979
+## 4            0.4152577
+## 5            0.3985868
+## 6            0.3607289
+</pre></div>
+</div></div>
+
+<p>Now, this will download the entire series for each stock into one dataframe and populate the missing observations with NA.  If we want to remove all the NAs, we can use <a href="http://stackoverflow.com/questions/4862178/remove-rows-with-nas-in-data-frame">complete.cases()</a> or keep them in depending on what we are attempting to accomplish.</p>
+
+<p>This could get tedious to type in all the symbols names, database, and then column number.  Of course, you can write a function to perform these tasks.  Luckily for you, I wrote a function that you are free to use. You are able to pass as arguments: a vector of ticker codes, start_date, end_date, interval, column, and the particular database you want to pull from.  The first line in the function is creating the codes to download the data from Quandl given the data you passed it.  Then, the for loop goes through each ticker symbol pulling the data and merging it back into the dataframe before it is passed back to the function call.</p>
+<div class="chunk" id="unnamed-chunk-9"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">getData</span> <span class="hl kwb">&lt;-</span> <span class="hl kwa">function</span><span class="hl std">(</span><span class="hl kwc">ticker</span><span class="hl std">,</span> <span class="hl kwc">start</span><span class="hl std">,</span> <span class="hl kwc">end</span><span class="hl std">,</span> <span class="hl kwc">interval</span><span class="hl std">,</span> <span class="hl kwc">column</span><span class="hl std">,</span> <span class="hl kwc">database</span><span class="hl std">) {</span>
+  <span class="hl std">stocks</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">paste</span><span class="hl std">(database,</span> <span class="hl str">&quot;/&quot;</span><span class="hl std">, ticker,</span> <span class="hl str">&quot;.&quot;</span><span class="hl std">, column,</span> <span class="hl kwc">sep</span><span class="hl std">=</span><span class="hl str">&quot;&quot;</span><span class="hl std">)</span> <span class="hl com">#Creates Download codes</span>
+  <span class="hl kwa">for</span><span class="hl std">(i</span> <span class="hl kwa">in</span> <span class="hl num">1</span><span class="hl opt">:</span><span class="hl kwd">length</span><span class="hl std">(stocks)){</span>
+    <span class="hl kwa">if</span><span class="hl std">(i</span><span class="hl opt">==</span><span class="hl num">1</span><span class="hl std">){</span>
+      <span class="hl std">df</span><span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(stocks[i],</span> <span class="hl kwc">collapse</span> <span class="hl std">= interval,</span> <span class="hl kwc">start_date</span> <span class="hl std">= start,</span> <span class="hl kwc">end_date</span> <span class="hl std">= end)</span>
+    <span class="hl std">}</span>
+    <span class="hl kwa">else</span><span class="hl std">{</span>
+      <span class="hl std">holder</span><span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(stocks[i],</span> <span class="hl kwc">collapse</span> <span class="hl std">= interval,</span> <span class="hl kwc">start_date</span> <span class="hl std">= start,</span> <span class="hl kwc">end_date</span> <span class="hl std">= end)</span>
+      <span class="hl std">df</span><span class="hl kwb">&lt;-</span> <span class="hl kwd">merge</span><span class="hl std">(df, holder,</span> <span class="hl kwc">by</span> <span class="hl std">=</span><span class="hl str">&quot;Date&quot;</span><span class="hl std">,</span> <span class="hl kwc">all</span><span class="hl std">=</span><span class="hl num">TRUE</span><span class="hl std">)</span> <span class="hl com">#Want to keep the NAs    </span>
+    <span class="hl std">}</span>
+  <span class="hl std">}</span>
+  <span class="hl kwd">names</span><span class="hl std">(df)</span><span class="hl kwb">&lt;-</span><span class="hl kwd">c</span><span class="hl std">(</span><span class="hl str">&quot;Date&quot;</span><span class="hl std">,ticker)</span>
+  <span class="hl kwd">return</span><span class="hl std">(df)</span>
+<span class="hl std">}</span>
+<span class="hl std">ticker</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">c</span><span class="hl std">(</span><span class="hl str">&quot;AAPL&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;MSFT&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;GE&quot;</span><span class="hl std">)</span>
+<span class="hl std">start</span> <span class="hl kwb">&lt;-</span> <span class="hl str">&quot;2005-01-01&quot;</span>
+<span class="hl std">end</span> <span class="hl kwb">&lt;-</span> <span class="hl str">&quot;2015-12-31&quot;</span>
+<span class="hl std">interval</span> <span class="hl kwb">&lt;-</span> <span class="hl str">&quot;monthly&quot;</span>
+<span class="hl std">column</span> <span class="hl kwb">&lt;-</span> <span class="hl num">11</span>
+<span class="hl std">database</span> <span class="hl kwb">&lt;-</span> <span class="hl str">&quot;WIKI&quot;</span>
+<span class="hl std">stockData</span><span class="hl kwb">&lt;-</span><span class="hl kwd">getData</span><span class="hl std">(ticker, start, end, interval, column, database)</span>
+<span class="hl kwd">head</span><span class="hl std">(stockData)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##         Date     AAPL     MSFT       GE
+## 1 2005-01-31 5.087117 20.64788 24.73930
+## 2 2005-02-28 5.935191 19.82890 24.25166
+## 3 2005-03-31 5.513138 19.04867 24.84417
+## 4 2005-04-30 4.770909 19.93923 24.94063
+## 5 2005-05-31 5.260344 20.39711 25.13354
+## 6 2005-06-30 4.870137 19.63814 24.02426
+</pre></div>
+</div></div>
+
+<p> This works pretty well and can be extended or used however you might want to manipulate the data coming in or out.  You could add a transform argument or data type argument.</p>
+
+<p><b>Update</b> After I published this the first time I realized that there is an alternative way to download the data that might be a little faster. When I first wrote the function above I was unaware that it was possible to pass a vector to Quandl.  Thats basically what we are going to do here; we will create a vector or ticker codes and paste() them together to create the appropriate vector.</p>  
+<div class="chunk" id="unnamed-chunk-10"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">ticker</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">c</span><span class="hl std">(</span><span class="hl str">&quot;AAPL&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;MSFT&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;GE&quot;</span><span class="hl std">)</span>
+<span class="hl std">stocks</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">paste</span><span class="hl std">(</span><span class="hl str">&quot;WIKI&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;/&quot;</span><span class="hl std">, ticker,</span> <span class="hl str">&quot;.&quot;</span><span class="hl std">, 11,</span> <span class="hl kwc">sep</span><span class="hl std">=</span><span class="hl str">&quot;&quot;</span><span class="hl std">)</span>
+<span class="hl std">stockData2</span><span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(stocks,</span> <span class="hl kwc">collapse</span> <span class="hl std">=</span> <span class="hl str">&quot;monthly&quot;</span><span class="hl std">,</span> <span class="hl kwc">start_date</span> <span class="hl std">=</span> <span class="hl str">&quot;2005-01-01&quot;</span><span class="hl std">,</span> <span class="hl kwc">end_date</span> <span class="hl std">=</span> <span class="hl str">&quot;2015-12-31&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">names</span><span class="hl std">(stockData2)</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">c</span><span class="hl std">(</span><span class="hl str">&quot;Date&quot;</span><span class="hl std">,ticker)</span>
+<span class="hl kwd">head</span><span class="hl std">(stockData2)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##         Date     AAPL     MSFT       GE
+## 1 2005-01-31 5.087117 20.64788 24.73930
+## 2 2005-02-28 5.935191 19.82890 24.25166
+## 3 2005-03-31 5.513138 19.04867 24.84417
+## 4 2005-04-30 4.770909 19.93923 24.94063
+## 5 2005-05-31 5.260344 20.39711 25.13354
+## 6 2005-06-30 4.870137 19.63814 24.02426
+</pre></div>
+</div></div>
+
+<p> This way just seems to make more sense in that if you want to add or remove arguments to Quandl(), you don't have to go in and change the function. We also want to be sure that they are pulling the same data by checking with all.equal() </p>
+<div class="chunk" id="unnamed-chunk-11"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">all.equal</span><span class="hl std">(stockData, stockData2)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] TRUE
+</pre></div>
+</div></div>
+ 
+<p>Also, because speed is important in how long it takes to pull the data we will compare the speed differences.</p>
+<div class="chunk" id="unnamed-chunk-12"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">system.time</span><span class="hl std">(stockData</span><span class="hl kwb">&lt;-</span><span class="hl kwd">getData</span><span class="hl std">(ticker, start, end, interval, column, database))</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##    user  system elapsed 
+##   0.032   0.004   1.230
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">system.time</span><span class="hl std">(stockData2</span><span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(stocks,</span> <span class="hl kwc">collapse</span> <span class="hl std">=</span> <span class="hl str">&quot;monthly&quot;</span><span class="hl std">,</span> <span class="hl kwc">start_date</span> <span class="hl std">=</span> <span class="hl str">&quot;2005-01-01&quot;</span><span class="hl std">,</span> <span class="hl kwc">end_date</span> <span class="hl std">=</span> <span class="hl str">&quot;2015-12-31&quot;</span><span class="hl std">))</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##    user  system elapsed 
+##   0.036   0.000   1.237
+</pre></div>
+</div></div>
+<p>The newer code is slightly faster, but not enough to probably make a difference.  Of course, the more stocks you are pulling the greater the difference will be.  In my opinion, the real savings are in programming time because the second example makes more intuitive sense and is easier to modify to fit my needs.  Regardless, use whatever makes sense to you.</p>
+
+<p>I hope this filled you in on some ways to extend the Quandl API.  Check it out! </p>
+    </div>
+  </section>
+</article>
+    <footer id="footer">
+      <div class="inner">
+        <section class="about">
+          <h4 class="major">Our Sister Websites</h4>
+          <p>This research and code base extends across a number of different projects that are at least tangenially related.</p>
+          <ul class="actions">
+            <li><a href="http://www.harpett.com" target="_blank">Harpett.com - Undergraduate Finance Practice Problems</a></li><br>
+            <li><a href="http://www.chasedehan.com" target="_blank">ChaseDeHan.com - Chase's personal website</a></li><br>
+            <li><a href="http://www.400westasset.com" target="_blank">400 West Asset Management</a></li><br>
+            <li><a href="http://www.uscupstate.edu/academics/johnsoncollege" target="_blank">USC Upstate - Johnson College of Business</a></li><br>
+            <li><a href="https://www.youtube.com/channel/UCtXGgjzGMVSxjwwmHL3eqiA" target="_blank">Chase's Finance Lectures on YouTube</a></li>
+          </ul>
+        </section>
+        <section class="contact-info">
+          <h4 class="major">Get in Touch</h4>
+          <ul class="contact">
+            <li class="fa-envelope"><a href="#">chase@400westasset.com</a></li>
+            <li class="fa-home">PO Box 6882<br />Spartanburg, SC 29304<br />USA</li>
+          </ul>
+        </section>
+      </div>
+      <div class="copyright">
+        <p>&copy; <a href="http://www.chasedehan.com">Chase DeHan</a>. All rights reserved.</p>
+      </div>
+    </footer>
+      <script src="assets/js/jquery.min.js"></script>
+      <script src="assets/js/jquery.scrolly.min.js"></script>
+      <script src="assets/js/skel.min.js"></script>
+      <script src="assets/js/util.js"></script>
+      <!--[if lte IE 8]><script src="assets/js/ie/respond.min.js"></script><![endif]-->
+      <script src="assets/js/main.js"></script>
+</body>
+</html>

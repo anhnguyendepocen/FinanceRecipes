@@ -1,0 +1,266 @@
+<html>
+
+<head>
+<link rel="stylesheet" href="assets/css/main.css" />
+<style type="text/css">
+.knitr .inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+} 
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.rimage .left {
+  text-align: left;
+}
+.rimage .right {
+  text-align: right;
+}
+.rimage .center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+
+<title>Finance Recipes - Fama-French</title>
+</head>
+
+<body>
+    <!-- Header -->
+      <header id="header">
+        <h1><a href="index.html">Fama-French <span>- Finance Recipes</span></a></h1>
+        <a href="#menu">Menu</a>
+      </header>
+
+    <!-- Menu -->
+      <nav id="menu">
+        <ul class="links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="academicCode.html">Recipes</a></li>
+          <li><a href="snippets.html">Snippets</a></li>
+        </ul>
+      </nav>
+
+<h2>Computing the Fama-French Factors </h2>
+<article id="main">
+  <section class="wrapper">
+    <div class="inner">
+<p>
+The Fama-French factor model provides a much better fit for the data than CAPM and is widely used to determine if a portfolio acheived alpha.  This snippet will show you how to compute the factor loadings on the Fama-French model through pulling data out of Quandl (A free API, check it out at <a href="http://www.quandl.com">www.quandl.com</a>)</p>
+<p>
+
+<p> The first step is to load the Quandl library to pull the data.  There are a lot of other sources of portfolio data (including your own) as well as the Fama-French data (such as <a href="http://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html" target="_blank">Ken French's Website</a>), but Quandl works perfectly for this example as it is self contained. </p>
+
+<p> Now, pull the Fama-French factors out of Quandl using monthly data ("FACTORS_A" would be annual) and then pull out a "portfolio." We are doing it for the time being using a single stock - AAPL - and using the additional arguments to specify that we want monthly returns as our output(see, I told you Quandl was cool). </p>
+<div class="chunk" id="unnamed-chunk-2"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">mFactors</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(</span><span class="hl str">&quot;KFRENCH/FACTORS_M&quot;</span><span class="hl std">)</span>  <span class="hl com">#Pulling out monthly factors </span>
+<span class="hl std">aapl</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(</span><span class="hl str">&quot;YAHOO/AAPL&quot;</span><span class="hl std">,</span> <span class="hl kwc">transform</span> <span class="hl std">=</span><span class="hl str">&quot;rdiff&quot;</span><span class="hl std">,</span> <span class="hl kwc">collapse</span> <span class="hl std">=</span> <span class="hl str">&quot;monthly&quot;</span><span class="hl std">)</span>  <span class="hl com">#Pull the stock data</span>
+</pre></div>
+</div></div>
+
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">dataframe</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">merge</span><span class="hl std">(aapl[,</span><span class="hl kwd">c</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl std">,</span><span class="hl num">7</span><span class="hl std">)], mFactors,</span> <span class="hl kwc">by</span> <span class="hl std">=</span> <span class="hl str">&quot;Date&quot;</span><span class="hl std">)</span>  <span class="hl com">#Merge the two dataframes, by the Date column</span>
+<span class="hl std">dataframe[,</span><span class="hl num">2</span><span class="hl std">]</span> <span class="hl kwb">&lt;-</span> <span class="hl std">dataframe[,</span><span class="hl num">2</span><span class="hl std">]</span> <span class="hl opt">*</span><span class="hl num">100</span>  <span class="hl com">#Convert the stock data to the same scale</span>
+
+<span class="hl com">#Assign the vector values for the regression</span>
+<span class="hl std">r</span> <span class="hl kwb">&lt;-</span> <span class="hl std">dataframe[,</span><span class="hl num">2</span><span class="hl std">]</span> <span class="hl opt">-</span> <span class="hl std">dataframe[,</span><span class="hl num">6</span><span class="hl std">]</span>
+<span class="hl std">rmrf</span> <span class="hl kwb">&lt;-</span> <span class="hl std">dataframe[,</span><span class="hl num">3</span><span class="hl std">]</span>
+<span class="hl std">smb</span> <span class="hl kwb">&lt;-</span> <span class="hl std">dataframe[,</span><span class="hl num">4</span><span class="hl std">]</span>
+<span class="hl std">hml</span> <span class="hl kwb">&lt;-</span> <span class="hl std">dataframe[,</span><span class="hl num">5</span><span class="hl std">]</span>
+</pre></div>
+</div></div>
+<p>Now that we have the data combined into a dataframe and split into the appropriate vectors, we can now run the model using the lm() function for a basic linear model.  We are assigning the output to the ff object and printing the results to the screen with summary() </p>
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#Run the regression and assign results to ff</span>
+<span class="hl std">ff</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">lm</span><span class="hl std">(r</span> <span class="hl opt">~</span> <span class="hl std">rmrf</span> <span class="hl opt">+</span> <span class="hl std">smb</span> <span class="hl opt">+</span> <span class="hl std">hml)</span>
+<span class="hl com">#Look at the data</span>
+<span class="hl kwd">summary</span><span class="hl std">(ff)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Call:
+## lm(formula = r ~ rmrf + smb + hml)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -46.791  -7.098   0.055   7.006  36.092 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)   1.3683     0.5875   2.329   0.0203 *  
+## rmrf          1.2073     0.1380   8.749  &lt; 2e-16 ***
+## smb           0.2818     0.1999   1.410   0.1593    
+## hml          -0.8364     0.2107  -3.969  8.5e-05 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 11.77 on 416 degrees of freedom
+## Multiple R-squared:  0.2589,	Adjusted R-squared:  0.2535 
+## F-statistic: 48.43 on 3 and 416 DF,  p-value: &lt; 2.2e-16
+</pre></div>
+</div></div>
+<p>In the regression output above, we are showing an adjusted R^2 of 0.2535 so its not a great fit, but acceptable.  The important things we are looking at here are the coeficients and the statistical significance.  The first term we are interested in (and most important in the evaluation of a portfolio manager) is the intercept, also known as the alpha coefficient.  Over this time period, AAPL shows a positive alpha and statistical significance at the 5% level, so there is an excess return to holding this stock.  When evaluating a portfolio, the things we really want to look out for are a negative alpha that indicates the fund underperformed the market.  <br>
+<br>
+RMRF is the CAPM beta coefficient and shows significance at 0.1% level with a value of 1.2073, which means what?  That's right, it is more volatile than the underlying market.  The SMB factor is not different from zero, so we can move along. High-Minus-Low (HML) is negative which means it is tilted toward the L, meaning it moves along with the low-book-market stocks.  This is an interesting result because Apple is not thought of as a growth stock even though they have had great gains in stock price over the last several years.</p>
+<br>
+<br>
+
+<h2>Contructing a Portfolio and Fama-French</h2>
+<p> The below section is assuming you have a portfolio of four stocks purchased at the beginning of 2007 and sold at the end of 2015. We want to see if this portfolio was able to generate alpha.  The companies selected in this portfolio are Apple (AAPL), Ford (F), General Electric (GE), and Microsoft (MSFT).  The first step is pulling the data from Quandl.  I do this 
+<div class="chunk" id="unnamed-chunk-5"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">stockData</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(</span><span class="hl kwd">c</span><span class="hl std">(</span><span class="hl str">&quot;WIKI/AAPL.11&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;WIKI/F.11&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;WIKI/GE.11&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;WIKI/MSFT.11&quot;</span><span class="hl std">),</span>
+               <span class="hl kwc">transform</span> <span class="hl std">=</span><span class="hl str">&quot;rdiff&quot;</span><span class="hl std">,</span> <span class="hl kwc">collapse</span> <span class="hl std">=</span> <span class="hl str">&quot;monthly&quot;</span><span class="hl std">,</span> <span class="hl kwc">start_date</span> <span class="hl std">=</span> <span class="hl str">&quot;2007-01-01&quot;</span><span class="hl std">,</span> <span class="hl kwc">end_date</span> <span class="hl std">=</span> <span class="hl str">&quot;2015-12-31&quot;</span> <span class="hl std">)</span>
+<span class="hl kwd">names</span><span class="hl std">(stockData)</span><span class="hl kwb">&lt;-</span><span class="hl kwd">c</span><span class="hl std">(</span><span class="hl str">&quot;Date&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;AAPL&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;F&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;GE&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;MSFT&quot;</span><span class="hl std">)</span> <span class="hl com">#Renaming the variables, not necessary, but cleaner</span>
+<span class="hl kwd">head</span><span class="hl std">(stockData)</span> <span class="hl com">#taking a look at the dataframe with monthly returns</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##         Date         AAPL            F          GE        MSFT
+## 1 2007-02-28 -0.013064272 -0.027060271 -0.02396327 -0.08402124
+## 2 2007-03-31  0.098097152 -0.002528445  0.01289029 -0.01064963
+## 3 2007-04-30  0.074157787  0.019011407  0.04242081  0.07427341
+## 4 2007-05-31  0.214338677  0.037313433  0.01953337  0.02836741
+## 5 2007-06-30  0.007005471  0.129496403  0.02597785 -0.03975236
+## 6 2007-07-31  0.079646018 -0.096602972  0.01253918 -0.01628775
+</pre></div>
+</div></div>
+
+<p> We are now computing the portfolio returns my multiplying the columns of stockData by their portfolio weights (0.2, 0.2, 0.4, 0.2) and creating a new column called portReturn.  </p>
+
+<div class="chunk" id="unnamed-chunk-6"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">stockData</span><span class="hl opt">$</span><span class="hl std">portReturn</span> <span class="hl kwb">&lt;-</span> <span class="hl std">stockData[,</span><span class="hl num">2</span><span class="hl std">]</span> <span class="hl opt">*</span> <span class="hl num">0.2</span> <span class="hl opt">+</span> <span class="hl std">stockData[,</span><span class="hl num">3</span><span class="hl std">]</span> <span class="hl opt">*</span> <span class="hl num">0.2</span> <span class="hl opt">+</span> <span class="hl std">stockData[,</span><span class="hl num">4</span><span class="hl std">]</span> <span class="hl opt">*</span> <span class="hl num">0.4</span> <span class="hl opt">+</span> <span class="hl std">stockData[,</span><span class="hl num">5</span><span class="hl std">]</span> <span class="hl opt">*</span> <span class="hl num">0.2</span>
+     <span class="hl com">#computing the portfolio return vector called portReturn</span>
+<span class="hl kwd">head</span><span class="hl std">(stockData)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##         Date         AAPL            F          GE        MSFT
+## 1 2007-02-28 -0.013064272 -0.027060271 -0.02396327 -0.08402124
+## 2 2007-03-31  0.098097152 -0.002528445  0.01289029 -0.01064963
+## 3 2007-04-30  0.074157787  0.019011407  0.04242081  0.07427341
+## 4 2007-05-31  0.214338677  0.037313433  0.01953337  0.02836741
+## 5 2007-06-30  0.007005471  0.129496403  0.02597785 -0.03975236
+## 6 2007-07-31  0.079646018 -0.096602972  0.01253918 -0.01628775
+##     portReturn
+## 1 -0.034414463
+## 2  0.022139932
+## 3  0.050456847
+## 4  0.063817253
+## 5  0.029741040
+## 6 -0.001633267
+</pre></div>
+</div></div>
+
+<p> Download the Fama-French factors and merge them into the dataframe, along with converting the returns to be on the same scale.  FF comes out in %, while the stock prices are in decimal form</p>
+<div class="chunk" id="unnamed-chunk-7"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">mFactors</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(</span><span class="hl str">&quot;KFRENCH/FACTORS_M&quot;</span><span class="hl std">,</span> <span class="hl kwc">start_date</span> <span class="hl std">=</span> <span class="hl str">&quot;2007-01-01&quot;</span><span class="hl std">,</span> <span class="hl kwc">end_date</span> <span class="hl std">=</span> <span class="hl str">&quot;2015-12-31&quot;</span><span class="hl std">)</span>
+<span class="hl std">stockData</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">merge</span><span class="hl std">(stockData, mFactors,</span> <span class="hl kwc">by</span> <span class="hl std">=</span> <span class="hl str">&quot;Date&quot;</span><span class="hl std">)</span>  <span class="hl com">#Merge the two dataframes, by the Date column</span>
+<span class="hl std">stockData[,</span><span class="hl num">2</span><span class="hl opt">:</span><span class="hl num">6</span><span class="hl std">]</span> <span class="hl kwb">&lt;-</span> <span class="hl std">stockData[,</span><span class="hl num">2</span><span class="hl opt">:</span><span class="hl num">6</span><span class="hl std">]</span> <span class="hl opt">*</span><span class="hl num">100</span>  <span class="hl com">#Convert the stock data to the same scale</span>
+</pre></div>
+</div></div>
+<p> We are now doing the same thing we did above by assigning the appropriate vectors and running the regression, along with summary output </p>
+<div class="chunk" id="unnamed-chunk-8"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">r</span> <span class="hl kwb">&lt;-</span> <span class="hl std">stockData[,</span><span class="hl num">6</span><span class="hl std">]</span> <span class="hl opt">-</span> <span class="hl std">stockData[,</span><span class="hl num">10</span><span class="hl std">]</span>
+<span class="hl std">rmrf</span> <span class="hl kwb">&lt;-</span> <span class="hl std">stockData[,</span><span class="hl num">7</span><span class="hl std">]</span>
+<span class="hl std">smb</span> <span class="hl kwb">&lt;-</span> <span class="hl std">stockData[,</span><span class="hl num">8</span><span class="hl std">]</span>
+<span class="hl std">hml</span> <span class="hl kwb">&lt;-</span> <span class="hl std">stockData[,</span><span class="hl num">9</span><span class="hl std">]</span>
+<span class="hl std">ff</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">lm</span><span class="hl std">(r</span> <span class="hl opt">~</span> <span class="hl std">rmrf</span> <span class="hl opt">+</span> <span class="hl std">smb</span> <span class="hl opt">+</span> <span class="hl std">hml)</span>
+<span class="hl kwd">summary</span><span class="hl std">(ff)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Call:
+## lm(formula = r ~ rmrf + smb + hml)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -8.519 -1.970 -0.540  1.986 25.873 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  0.59535    0.40632   1.465   0.1459    
+## rmrf         1.38897    0.09576  14.504   &lt;2e-16 ***
+## smb         -0.26853    0.18728  -1.434   0.1546    
+## hml          0.44581    0.17480   2.550   0.0122 *  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 4.125 on 103 degrees of freedom
+## Multiple R-squared:  0.7331,	Adjusted R-squared:  0.7253 
+## F-statistic: 94.28 on 3 and 103 DF,  p-value: &lt; 2.2e-16
+</pre></div>
+</div></div>
+<p> R^2 is a pretty substantial fit at 0.7253, <br>
+Did you generate alpha?  there is a positive intercept, but is not significant - NO ALPHA<br>
+<br>
+What were this portfolio's exposures?<br>
+<br>Primarily to the market, shows a beta of 1.38 and is highly significant according to t-value at 14.5  Its more volatile than the market (you can see that when looking at the data). SMB is negative, but not significant so there isn't exposure here: although this feels surprising because they are all large stocks.  HML is positive and statistically significant, meaning that our portfolio had a value tilt.  Yes, it has a value tilt because of the stocks we picked, they are NOT growth stocks<br>
+<br></p>
+
+<p> I hope this was helpful for figuring out how to compute the factor loadings for the Fama-French model and a basic interpretation of the results. There are a ton of ways to expand this, but just remember to get whatever returns you are looking at in the same time frame as the Fama-French factors.  Expanding this to include the multitude of other factors is relatively straightforward - just add those to the right hand side of the regression equation.</p>
+    </div>
+  </section>
+</article>
+    <footer id="footer">
+      <div class="inner">
+        <section class="about">
+          <h4 class="major">Our Sister Websites</h4>
+          <p>This research and code base extends across a number of different projects that are at least tangenially related.</p>
+          <ul class="actions">
+            <li><a href="http://www.harpett.com" target="_blank">Harpett.com - Undergraduate Finance Practice Problems</a></li><br>
+            <li><a href="http://www.chasedehan.com" target="_blank">ChaseDeHan.com - Chase's personal website</a></li><br>
+            <li><a href="http://www.400westasset.com" target="_blank">400 West Asset Management</a></li><br>
+            <li><a href="http://www.uscupstate.edu/academics/johnsoncollege" target="_blank">USC Upstate - Johnson College of Business</a></li><br>
+            <li><a href="https://www.youtube.com/channel/UCtXGgjzGMVSxjwwmHL3eqiA" target="_blank">Chase's Finance Lectures on YouTube</a></li>
+          </ul>
+        </section>
+        <section class="contact-info">
+          <h4 class="major">Get in Touch</h4>
+          <ul class="contact">
+            <li class="fa-envelope"><a href="#">chase@400westasset.com</a></li>
+            <li class="fa-home">PO Box 6882<br />Spartanburg, SC 29304<br />USA</li>
+          </ul>
+        </section>
+      </div>
+      <div class="copyright">
+        <p>&copy; <a href="http://www.chasedehan.com">Chase DeHan</a>. All rights reserved.</p>
+      </div>
+    </footer>
+      <script src="assets/js/jquery.min.js"></script>
+      <script src="assets/js/jquery.scrolly.min.js"></script>
+      <script src="assets/js/skel.min.js"></script>
+      <script src="assets/js/util.js"></script>
+      <!--[if lte IE 8]><script src="assets/js/ie/respond.min.js"></script><![endif]-->
+      <script src="assets/js/main.js"></script>
+</body>
+</html>

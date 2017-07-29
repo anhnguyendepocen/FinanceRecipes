@@ -1,0 +1,237 @@
+<html>
+
+<head>
+<link rel="stylesheet" href="assets/css/main.css" />
+<style type="text/css">
+.knitr .inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.rimage .left {
+  text-align: left;
+}
+.rimage .right {
+  text-align: right;
+}
+.rimage .center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+<title>Finance Recipes - quantmod Charting</title>
+</head>
+
+<body>
+    <!-- Header -->
+      <header id="header">
+        <h1><a href="index.html">quantmod graphs <span>- Finance Recipes</span></a></h1>
+        <a href="#menu">Menu</a>
+      </header>
+
+    <!-- Menu -->
+      <nav id="menu">
+        <ul class="links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="academicCode.html">Recipes</a></li>
+          <li><a href="snippets.html">Snippets</a></li>
+        </ul>
+      </nav>
+
+<h2>Charting with quantmod</h2>
+<article id="main">
+  <section class="wrapper">
+    <div class="inner">
+
+<p>The plot() function included with base R is a good tool, but there exists a huge number of other graphics packages.  You are probably familiar with the general packages of ggplot2 and ggvis.  This demo is showing some of the features of the <a href="https://cran.r-project.org/web/packages/quantmod/quantmod.pdf">"quantmod"</a> package.  There are some newer tools such as <a href="http://www.r-programming.org/papers">"quantstrat"</a> (which has poor documentation) and <a href="https://cran.r-project.org/web/packages/PerformanceAnalytics/vignettes/PA-charts.pdf">"PerformanceAnalytics"</a>.  These are definitely some tools to become familiar with as they are more powerful.  However, I really like the ease with which to generate some basic security price plots, along with the technical indicators(although I am so far from being a technician).</p>
+
+</p>While there are a number of functions to quantmod, this snippet focuses on generating graphs.  The first thing we need to do is install and load up the library:
+
+<div class="chunk" id="unnamed-chunk-2"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">install.packages("quantmod")<br>library(quantmod)</span>
+</pre></div>
+</div></div>
+<p>Once we are all loaded up, we can use the quantmod method to download a stock price series.  For this example we will use Apple (AAPL) and the getSymbols() function that automatically pulls data from Yahoo Finance.  This will download as an object called AAPL.  We can then chart the series with the chartSeries() function.  The only requirement for this function is the data as either a "xts" or "zoo" time series object. </p>
+
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">getSymbols</span><span class="hl std">(</span><span class="hl str">&quot;AAPL&quot;</span><span class="hl std">)</span>
+</pre></div>
+<div class="message"><pre class="knitr r">
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] &quot;AAPL&quot;
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">head</span><span class="hl std">(AAPL)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##            AAPL.Open AAPL.High AAPL.Low AAPL.Close AAPL.Volume
+## 2007-01-03     86.29     86.58    81.90      83.80   309579900
+## 2007-01-04     84.05     85.95    83.82      85.66   211815100
+## 2007-01-05     85.77     86.20    84.40      85.05   208685400
+## 2007-01-08     85.96     86.53    85.28      85.47   199276700
+## 2007-01-09     86.45     92.98    85.15      92.57   837324600
+## 2007-01-10     94.75     97.80    93.45      97.00   738220000
+##            AAPL.Adjusted
+## 2007-01-03      11.08661
+## 2007-01-04      11.33269
+## 2007-01-05      11.25198
+## 2007-01-08      11.30755
+## 2007-01-09      12.24687
+## 2007-01-10      12.83295
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">chartSeries</span><span class="hl std">(AAPL)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/quantmod1.png" title="plot of chunk unnamed-chunk-3" alt="plot of chunk unnamed-chunk-3" class="plot" /></div></div>
+<p>You will notice that this graph is automatically a candlestick graph with Open, High, Low, and Closing prices in the main panel, with the volume presented on the lower panel.  </p>
+<p>I really do not like the method for downloading the data as the time series beginning is arbitrarily set and is the raw  prices, rather than the adjusted prices and makes developing a trading strategy difficult. Additionally, things can get very dicey if you are downloading large amounts of data. You can see the challenges with raw prices and the 7:1 split in 2014 with the huge drop in prices.  So I like to use <a href="http://www.quandl.com">Quandl</a> because it gives me a lot more control over what data goes into my models.  (You can see my write-up <a href="http://financerecipes.com/quandl.html">here.</a>
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#library(Quandl)</span>
+<span class="hl std">aapl</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(</span><span class="hl str">&quot;WIKI/AAPL&quot;</span><span class="hl std">,</span> <span class="hl kwc">type</span> <span class="hl std">=</span> <span class="hl str">&quot;xts&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">head</span><span class="hl std">(aapl)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##             Open  High   Low Close  Volume Ex-Dividend Split Ratio
+## 1980-12-12 28.75 28.87 28.75 28.75 2093900           0           1
+## 1980-12-15 27.38 27.38 27.25 27.25  785200           0           1
+## 1980-12-16 25.37 25.37 25.25 25.25  472000           0           1
+## 1980-12-17 25.87 26.00 25.87 25.87  385900           0           1
+## 1980-12-18 26.63 26.75 26.63 26.63  327900           0           1
+## 1980-12-19 28.25 28.38 28.25 28.25  217100           0           1
+##            Adj. Open Adj. High  Adj. Low Adj. Close Adj. Volume
+## 1980-12-12 0.4387171 0.4405482 0.4387171  0.4387171   117258400
+## 1980-12-15 0.4178112 0.4178112 0.4158275  0.4158275    43971200
+## 1980-12-16 0.3871392 0.3871392 0.3853080  0.3853080    26432000
+## 1980-12-17 0.3947690 0.3967528 0.3947690  0.3947690    21610400
+## 1980-12-18 0.4063664 0.4081976 0.4063664  0.4063664    18362400
+## 1980-12-19 0.4310872 0.4330710 0.4310872  0.4310872    12157600
+</pre></div>
+</div></div>
+<p>We have data!  Notice that we had to specify to download the data in "xts" format because it will not work with chartSeries without it.  Because the candlestick charts show open, high, low, and close (OHLC) as well as volume, we do want to check and make sure that our data has these characteristics.  quantmod has a couple built in functions.</p>
+<div class="chunk" id="unnamed-chunk-5"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">is.OHLC</span><span class="hl std">(aapl)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] TRUE
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">has.Vo</span><span class="hl std">(aapl)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] TRUE
+</pre></div>
+</div></div>
+<p>Ok, we are good to go and plot</p>
+<div class="chunk" id="unnamed-chunk-6"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">chartSeries</span><span class="hl std">(aapl)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/quantmod2.png" title="plot of chunk unnamed-chunk-6" alt="plot of chunk unnamed-chunk-6" class="plot" /></div></div>
+<p>BUT WAIT! There is a problem!  Why is it plotting two lines on the main panel!?  That's because our data has two sets of prices and volume.(raw and adjusted).  They can quickly diverge with stock splits and paid dividends.  So, lets split out the data we want - adjusted prices - and chart it again. </p>
+<div class="chunk" id="unnamed-chunk-7"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">aapl</span> <span class="hl kwb">&lt;-</span> <span class="hl std">aapl[,</span><span class="hl num">8</span><span class="hl opt">:</span><span class="hl num">12</span><span class="hl std">]</span> <span class="hl com">#We could also specify this in the Quandl() download.</span>
+<span class="hl kwd">head</span><span class="hl std">(aapl)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##            Adj. Open Adj. High  Adj. Low Adj. Close Adj. Volume
+## 1980-12-12 0.4387171 0.4405482 0.4387171  0.4387171   117258400
+## 1980-12-15 0.4178112 0.4178112 0.4158275  0.4158275    43971200
+## 1980-12-16 0.3871392 0.3871392 0.3853080  0.3853080    26432000
+## 1980-12-17 0.3947690 0.3967528 0.3947690  0.3947690    21610400
+## 1980-12-18 0.4063664 0.4081976 0.4063664  0.4063664    18362400
+## 1980-12-19 0.4310872 0.4330710 0.4310872  0.4310872    12157600
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">chartSeries</span><span class="hl std">(aapl)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/quantmod3.png" title="plot of chunk unnamed-chunk-7" alt="plot of chunk unnamed-chunk-7" class="plot" /></div></div>
+<p> We can also change the colors if we want by passing a couple extra arguments. </p>
+<div class="chunk" id="unnamed-chunk-8"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">chartSeries</span><span class="hl std">(aapl,</span> <span class="hl kwc">multi.col</span> <span class="hl std">=</span> <span class="hl num">TRUE</span><span class="hl std">,</span> <span class="hl kwc">theme</span> <span class="hl std">=</span> <span class="hl str">'white'</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/quantmod4.png" title="plot of chunk unnamed-chunk-8" alt="plot of chunk unnamed-chunk-8" class="plot" /></div></div>
+<p>We also might want to shorten the series a little bit because of the sharp rise since the mid 2000s. We do this with the  "subset=" argument.</p>
+<div class="chunk" id="unnamed-chunk-9"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">chartSeries</span><span class="hl std">(aapl,</span> <span class="hl kwc">multi.col</span> <span class="hl std">=</span> <span class="hl num">TRUE</span><span class="hl std">,</span> <span class="hl kwc">theme</span> <span class="hl std">=</span> <span class="hl str">'white'</span><span class="hl std">,</span> <span class="hl kwc">subset</span><span class="hl std">=</span><span class="hl str">&quot;2006::2016&quot;</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/quantmod5.png" title="plot of chunk unnamed-chunk-9" alt="plot of chunk unnamed-chunk-9" class="plot" /></div></div>
+<p>A fair number of people ("chartists") are fans of voodoo (I mean technical analysis).  While I will NOT use these to make trading decisions, they do make some pretty graphs. We use this by adding the "TA=" argument.</p>
+<div class="chunk" id="unnamed-chunk-10"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">chartSeries</span><span class="hl std">(aapl,</span> <span class="hl kwc">subset</span><span class="hl std">=</span><span class="hl str">&quot;2015::2016&quot;</span><span class="hl std">,</span> <span class="hl kwc">TA</span> <span class="hl std">=</span><span class="hl str">&quot;addBBands()&quot;</span><span class="hl std">)</span> <span class="hl com">#Adding Bollinger Bands</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/quantmod6.png" title="plot of chunk unnamed-chunk-10" alt="plot of chunk unnamed-chunk-10" class="plot" /></div><div class="rcode">
+<div class="source"><pre class="knitr r"><span class="hl kwd">chartSeries</span><span class="hl std">(aapl,</span> <span class="hl kwc">subset</span><span class="hl std">=</span><span class="hl str">&quot;2015::2016&quot;</span><span class="hl std">,</span> <span class="hl kwc">TA</span> <span class="hl std">=</span><span class="hl str">&quot;addWMA()&quot;</span><span class="hl std">)</span>    <span class="hl com">#Adding Weighted Moving Average</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/quantmod7.png" title="plot of chunk unnamed-chunk-10" alt="plot of chunk unnamed-chunk-10" class="plot" /></div></div>
+<p> There are a number of other technical indicators that can be found in the <a href="http://www.quantmod.com/documentation/TA.html">documentation.</a> If you are into that sort of thing definitely check it out as there is a large number of factors you can look at.</p>
+<p>What you will notice is that the volatility has dropped out because the default argument is to add volatility (addVo()).  So, if we add additional Technical Analysis factors, we have to include addVo() to the TA argument. We can pass multiple technical indicators to TA by separating them by semicolons as shown below.</p>
+<div class="chunk" id="unnamed-chunk-11"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">chartSeries</span><span class="hl std">(aapl,</span>
+            <span class="hl kwc">name</span><span class="hl std">=</span><span class="hl str">&quot;Apple Technical Indicators&quot;</span><span class="hl std">,</span>
+            <span class="hl kwc">theme</span> <span class="hl std">=</span> <span class="hl str">'white'</span><span class="hl std">,</span>
+            <span class="hl kwc">subset</span><span class="hl std">=</span><span class="hl str">&quot;2015-06::2016&quot;</span><span class="hl std">,</span>
+            <span class="hl kwc">TA</span> <span class="hl std">=</span><span class="hl str">&quot;addBBands();addDPO();addSMI();addCMF();addVo()&quot;</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/quantmod8.png" title="plot of chunk unnamed-chunk-11" alt="plot of chunk unnamed-chunk-11" class="plot" /></div></div>
+<p>So there you have it.  Thats the basic way we can create some fancy stock price charts.  I hope this is helpful to you.  If reading the official documentation is difficult, there is a (outdate) website explaining quantmod at <a href="http://www.quantmod.com">www.quantmod.com.</a>  Once you get the hang of this, it may be time to move on to one of the more complex graphics packages. Word.</p>
+    </div>
+  </section>
+</article>
+    <footer id="footer">
+      <div class="inner">
+        <section class="about">
+          <h4 class="major">Our Sister Websites</h4>
+          <p>This research and code base extends across a number of different projects that are at least tangenially related.</p>
+          <ul class="actions">
+            <li><a href="http://www.harpett.com" target="_blank">Harpett.com - Undergraduate Finance Practice Problems</a></li><br>
+            <li><a href="http://www.chasedehan.com" target="_blank">ChaseDeHan.com - Chase's personal website</a></li><br>
+            <li><a href="http://www.400westasset.com" target="_blank">400 West Asset Management</a></li><br>
+            <li><a href="http://www.uscupstate.edu/academics/johnsoncollege" target="_blank">USC Upstate - Johnson College of Business</a></li><br>
+            <li><a href="https://www.youtube.com/channel/UCtXGgjzGMVSxjwwmHL3eqiA" target="_blank">Chase's Finance Lectures on YouTube</a></li>
+          </ul>
+        </section>
+        <section class="contact-info">
+          <h4 class="major">Get in Touch</h4>
+          <ul class="contact">
+            <li class="fa-envelope"><a href="#">chase@400westasset.com</a></li>
+            <li class="fa-home">PO Box 6882<br />Spartanburg, SC 29304<br />USA</li>
+          </ul>
+        </section>
+      </div>
+      <div class="copyright">
+        <p>&copy; <a href="http://www.chasedehan.com">Chase DeHan</a>. All rights reserved.</p>
+      </div>
+    </footer>
+      <script src="assets/js/jquery.min.js"></script>
+      <script src="assets/js/jquery.scrolly.min.js"></script>
+      <script src="assets/js/skel.min.js"></script>
+      <script src="assets/js/util.js"></script>
+      <!--[if lte IE 8]><script src="assets/js/ie/respond.min.js"></script><![endif]-->
+      <script src="assets/js/main.js"></script>
+</body>
+</html>

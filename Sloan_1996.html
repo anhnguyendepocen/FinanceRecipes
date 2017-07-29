@@ -1,0 +1,506 @@
+<html>
+
+<head>
+<style type="text/css">
+.knitr .inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.rimage .left {
+  text-align: left;
+}
+.rimage .right {
+  text-align: right;
+}
+.rimage .center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+<link rel="stylesheet" href="assets/css/main.css" />
+<title>Finance Recipes - Sloan(1996)</title>
+</head>
+
+<body>
+    <!-- Header -->
+      <header id="header">
+        <h1><a href="index.html">Sloan(1996) <span>- Finance Recipes</span></a></h1>
+        <a href="#menu">Menu</a>
+      </header>
+
+    <!-- Menu -->
+      <nav id="menu">
+        <ul class="links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="academicCode.html">Recipes</a></li>
+          <li><a href="snippets.html">Snippets</a></li>
+        </ul>
+      </nav>
+<h2>Sloan, Richard (2006) - "Do Stock Prices Fully Reflect Information in Accruals and Cash Flows about Future Earnings?" <i>Accounting Review</i></h2>
+<article id="main">
+  <section class="wrapper">
+    <div class="inner">
+<p>You can find the paper <a href="http://lib.cufe.edu.cn/upload_files/other/4_20140516025122_11.pdf" target="_blank">at this link.</a></p>
+<p>This is the first Academic Paper Finance Recipe I have posted and there are still some things that need to be cleaned up for a complete
+replication code base to be present.  But, this should help you figure out what is going on exactly.  In order to understand the code, you need to be familiar with the <a href="https://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html">dplyr R package.</a>  Unfortunately, because of licensing issues with CRSP/Compustat I am unable to share the data with you, but you will see that what you need to download is spelled out pretty clearly. </p>
+
+<p><b>Beware</b> this script is not optimized for speed or memory constraints and is run on a relatively powerful machine. If your R session crashes it is likely due to how memory is handled so you can either compute on a subset or make the dataframe smaller.  I left it the way it is to illustrate what exactly is going on</p>
+
+<p> To start, we use a number of libraries that need to be loaded in:</p>
+<div class="chunk" id="unnamed-chunk-1"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(dplyr)</span> <span class="hl com">#Slicing and dicing data</span>
+</pre></div>
+<div class="message"><pre class="knitr r">## 
+## Attaching package: 'dplyr'
+</pre></div>
+<div class="message"><pre class="knitr r">## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+</pre></div>
+<div class="message"><pre class="knitr r">## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(ggvis)</span> <span class="hl com">#for plotting</span>
+<span class="hl kwd">library</span><span class="hl std">(nlme)</span> <span class="hl com">#for the generalized least squares</span>
+</pre></div>
+<div class="message"><pre class="knitr r">## 
+## Attaching package: 'nlme'
+</pre></div>
+<div class="message"><pre class="knitr r">## The following object is masked from 'package:dplyr':
+## 
+##     collapse
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(lubridate)</span>  <span class="hl com">#Great library for manipulating dates</span>
+<span class="hl kwd">library</span><span class="hl std">(Quandl)</span> <span class="hl com"># To Download the Fama-French factors</span>
+</pre></div>
+<div class="message"><pre class="knitr r">## Loading required package: xts
+</pre></div>
+<div class="message"><pre class="knitr r">## Loading required package: zoo
+</pre></div>
+<div class="message"><pre class="knitr r">## 
+## Attaching package: 'zoo'
+</pre></div>
+<div class="message"><pre class="knitr r">## The following objects are masked from 'package:base':
+## 
+##     as.Date, as.Date.numeric
+</pre></div>
+<div class="message"><pre class="knitr r">## 
+## Attaching package: 'xts'
+</pre></div>
+<div class="message"><pre class="knitr r">## The following objects are masked from 'package:dplyr':
+## 
+##     first, last
+</pre></div>
+</div></div>
+
+
+<p>Assuming your data is loaded in your workspace and called "data" with the appropriately titled variables, we can perform the necessary manipulations to the data.</p>
+
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#Data Descriptions as it comes out of Compustat</span>
+<span class="hl com">####################################</span>
+<span class="hl com">#CEQQ_STD &lt;- common equity</span>
+<span class="hl com">#ATQ_STD &lt;- total assets</span>
+<span class="hl com">#LTQ_STD &lt;- total liabilities</span>
+<span class="hl com">#ACTQ_STD &lt;- current assets</span>
+<span class="hl com">#CHEQ_STD &lt;- cash and cash equivalents</span>
+<span class="hl com">#LCTQ_STD &lt;- current liabilities</span>
+<span class="hl com">#DLCQ_STD &lt;- debt in current liabilities</span>
+<span class="hl com">#TXPQ_STD &lt;- income taxes payable</span>
+<span class="hl com">#DPQ_STD &lt;- depreciation and amortization</span>
+<span class="hl com">#OIDBPQ_STD &lt;- EBITDA, Operating Income before depreciation</span>
+
+<span class="hl com">#Now creating new variables with the below information</span>
+<span class="hl std">DT</span> <span class="hl kwb">&lt;-</span> <span class="hl std">data</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">filter</span><span class="hl std">(SH</span> <span class="hl opt">==</span> <span class="hl num">10</span> <span class="hl opt">|</span> <span class="hl std">SH</span> <span class="hl opt">==</span> <span class="hl num">11</span><span class="hl std">)</span>  <span class="hl opt">%&gt;%</span> <span class="hl com">#Keep only those with sharecodes equal to 10 or 11</span>
+  <span class="hl kwd">group_by</span><span class="hl std">(PERMCO)</span> <span class="hl opt">%&gt;%</span>    <span class="hl com">#Perform the below operations only on the PERMCOs</span>
+  <span class="hl kwd">mutate</span><span class="hl std">(</span><span class="hl kwc">Date2</span> <span class="hl std">=</span> <span class="hl kwd">rollback</span><span class="hl std">(Date</span> <span class="hl opt">+</span> <span class="hl kwd">months</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl std">)),</span>   <span class="hl com">#rolling the date to the end of the month for the Fama-French merge</span>
+         <span class="hl kwc">dCA</span> <span class="hl std">= ACTQ_STD</span> <span class="hl opt">-</span> <span class="hl kwd">lag</span><span class="hl std">(ACTQ_STD),</span>  <span class="hl com">#dCA &lt;- change in current Assets</span>
+         <span class="hl kwc">dCash</span> <span class="hl std">= CHEQ_STD</span> <span class="hl opt">-</span> <span class="hl kwd">lag</span><span class="hl std">(CHEQ_STD),</span>  <span class="hl com">#dCash &lt;- change in cash/cash equivalents</span>
+         <span class="hl kwc">dCL</span> <span class="hl std">= LCTQ_STD</span> <span class="hl opt">-</span> <span class="hl kwd">lag</span><span class="hl std">(LCTQ_STD),</span>  <span class="hl com">#dCL &lt;- change in current liabilities</span>
+         <span class="hl kwc">dSTD</span> <span class="hl std">= DLCQ_STD</span> <span class="hl opt">-</span> <span class="hl kwd">lag</span><span class="hl std">(DLCQ_STD),</span>  <span class="hl com">#dSTD &lt;- change in debt included in current liabilities</span>
+         <span class="hl kwc">dTP</span> <span class="hl std">= TXPQ_STD</span> <span class="hl opt">-</span> <span class="hl kwd">lag</span><span class="hl std">(TXPQ_STD),</span>  <span class="hl com">#dTP &lt;- change in income taxes payable</span>
+         <span class="hl kwc">aTotAssets</span> <span class="hl std">= (Cap</span> <span class="hl opt">+</span> <span class="hl std">TCap)</span><span class="hl opt">/</span><span class="hl num">2</span><span class="hl std">,</span>     <span class="hl com">#Average total assets PROBABLY NOT USING THE RIGHT NUMBERS HERE SO CHECK IT OUT</span>
+         <span class="hl kwc">accruals</span> <span class="hl std">= dCA</span> <span class="hl opt">-</span> <span class="hl std">dCash</span> <span class="hl opt">-</span> <span class="hl std">(dCL</span> <span class="hl opt">-</span> <span class="hl std">dSTD</span> <span class="hl opt">-</span> <span class="hl std">dTP)</span> <span class="hl opt">-</span> <span class="hl std">DPQ_STD,</span>   <span class="hl com">#constructs the accruals component</span>
+         <span class="hl kwc">earningsSize</span> <span class="hl std">= OIBDPQ_STD</span> <span class="hl opt">/</span> <span class="hl std">aTotAssets,</span>           <span class="hl com">#Standardizing income by size (assets)</span>
+         <span class="hl kwc">earningsSizeLead</span> <span class="hl std">=</span> <span class="hl kwd">lead</span><span class="hl std">(earningsSize),</span>            <span class="hl com">#getting Earnings(t+1)</span>
+         <span class="hl kwc">accrualSize</span> <span class="hl std">= accruals</span> <span class="hl opt">/</span> <span class="hl std">aTotAssets,</span>              <span class="hl com">#Standardizing accruals by size (assets)</span>
+         <span class="hl kwc">cashFlowSize</span> <span class="hl std">= (OIBDPQ_STD</span> <span class="hl opt">-</span> <span class="hl std">accruals)</span> <span class="hl opt">/</span> <span class="hl std">aTotAssets,</span><span class="hl com">#Standardizing cash flow by size (assets)</span>
+         <span class="hl kwc">Adjprc1</span> <span class="hl std">=</span> <span class="hl kwd">lead</span><span class="hl std">(Adjprc,</span> <span class="hl kwc">n</span><span class="hl std">=</span><span class="hl num">4L</span><span class="hl std">),</span>        <span class="hl com">#These are look-ahead prices</span>
+         <span class="hl com">#Adjprc2 = lead(Adjprc, n=8L),</span>
+         <span class="hl com">#Adjprc3 = lead(Adjprc, n=12L),</span>
+         <span class="hl kwc">annualReturn</span> <span class="hl std">= (Adjprc1</span> <span class="hl opt">-</span> <span class="hl std">Adjprc)</span> <span class="hl opt">/</span> <span class="hl std">Adjprc )</span> <span class="hl opt">%&gt;%</span>    <span class="hl com">#Look ahead price factored into the return, we are constructing the portfolio and want to see the return.</span>
+        <span class="hl com">#annualReturn2 =   (Adjprc2 - Adjprc1) / Adjprc1</span>
+        <span class="hl com">#annualReturn3 =   (Adjprc3 - Adjprc2) / Adjprc2  </span>
+        <span class="hl com">#Jensen alpha</span>
+  <span class="hl kwd">filter</span><span class="hl std">(Adjprc</span><span class="hl opt">&gt;=</span><span class="hl num">1</span><span class="hl std">)</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">na.omit</span><span class="hl std">()</span>   <span class="hl com">#removing NAs from data.table</span>
+<span class="hl std">DT</span> <span class="hl kwb">&lt;-</span> <span class="hl std">DT[DT</span><span class="hl opt">$</span><span class="hl std">aTotAssets</span> <span class="hl opt">!=</span> <span class="hl num">0</span><span class="hl std">,]</span>  <span class="hl com">#removing observations with 0 assets; even though they might still be traded, </span>
+                               <span class="hl com">#keeping the zeros creates undefined variables when adjusting for size</span>
+</pre></div>
+</div></div>
+
+<p>The next step is to compute Jensen's Alpha and the CAPM Beta.  We do this first by downloading the Fama-French data from Quandl and extracting and manipulating the Mkt-RF and RF into annual returns, computed monthly.  Then, this dataframe gets merged back in with the DT dataframe. </p>
+
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#Download the Fama-French data from Quandl (I like this because it is intact and heavily used)</span>
+<span class="hl std">ffData</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">Quandl</span><span class="hl std">(</span><span class="hl str">&quot;KFRENCH/FACTORS_M&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">names</span><span class="hl std">(ffData)[</span><span class="hl num">2</span><span class="hl std">]</span> <span class="hl kwb">&lt;-</span> <span class="hl str">&quot;MktRF&quot;</span> <span class="hl com">#Just removing the &quot;-&quot; because it messes with the objects in the workspace</span>
+<span class="hl kwd">names</span><span class="hl std">(ffData)[</span><span class="hl num">1</span><span class="hl std">]</span> <span class="hl kwb">&lt;-</span> <span class="hl str">&quot;Date2&quot;</span> <span class="hl com">#And changing the name to match with DT</span>
+<span class="hl std">ffData</span><span class="hl opt">$</span><span class="hl std">Date2</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">ymd</span><span class="hl std">(ffData</span><span class="hl opt">$</span><span class="hl std">Date2)</span> <span class="hl com">#converting date to lubridate class</span>
+<span class="hl std">ffData</span><span class="hl opt">$</span><span class="hl std">MktRF</span> <span class="hl kwb">&lt;-</span> <span class="hl std">ffData</span><span class="hl opt">$</span><span class="hl std">MktRF</span> <span class="hl opt">/</span> <span class="hl num">100</span> <span class="hl com">#Converting to decimal form</span>
+
+<span class="hl com">#Need to compute the cumulative return Mkt-RF because the data comes out as monthly and the average RF over the year</span>
+<span class="hl com">#BEWARE, this is rather ugly and there HAS to be a better way than this, but it works.</span>
+
+<span class="hl com">#The reason I am doing this is:</span>
+<span class="hl com">#I could have pulled it out as annual, but I need the annual data by each month rather than the annual data for only one month.</span>
+
+<span class="hl com">#So, the way I am doing this is computing the cumulative returns (1+r)(1+r)...(1+r) for the 12 months for annualized</span>
+<span class="hl std">ffData</span> <span class="hl kwb">&lt;-</span> <span class="hl std">ffData</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">mutate</span><span class="hl std">(</span><span class="hl kwc">lag1</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(MktRF),</span> <span class="hl com">#Lagging because the returns are back-dated essentially</span>
+         <span class="hl kwc">lag2</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag1),</span>
+         <span class="hl kwc">lag3</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag2),</span>
+         <span class="hl kwc">lag4</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag3),</span>
+         <span class="hl kwc">lag5</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag4),</span>
+         <span class="hl kwc">lag6</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag5),</span>
+         <span class="hl kwc">lag7</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag6),</span>
+         <span class="hl kwc">lag8</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag7),</span>
+         <span class="hl kwc">lag9</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag8),</span>
+         <span class="hl kwc">lag10</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag9),</span>
+         <span class="hl kwc">lag11</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag10),</span>
+         <span class="hl kwc">lag12</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag11),</span>
+         <span class="hl kwc">cumMktRF</span> <span class="hl std">= ((</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">MktRF)</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">lag1)</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">lag2)</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">lag3)</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">lag4)</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">lag5)</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">lag6)</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">lag7)</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">lag8)</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">lag9)</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">lag10)</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">lag11)</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">+</span><span class="hl std">lag12)),</span>
+         <span class="hl kwc">cumMkt</span> <span class="hl std">= cumMktRF</span> <span class="hl opt">^</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">12</span><span class="hl std">)</span> <span class="hl opt">-</span> <span class="hl num">1</span><span class="hl std">)</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">select</span><span class="hl std">(Date2, cumMktRF, RF)</span>  <span class="hl com">#we now have the cumulative Mkt-RF by month</span>
+
+<span class="hl std">ffData</span> <span class="hl kwb">&lt;-</span> <span class="hl std">ffData</span> <span class="hl opt">%&gt;%</span>  <span class="hl com">#Now doing the same exact thing to find the average RF</span>
+  <span class="hl kwd">mutate</span><span class="hl std">(</span><span class="hl kwc">lag1</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(RF),</span> <span class="hl com">#This is now RF, rather than MktRF</span>
+         <span class="hl kwc">lag2</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag1),</span>
+         <span class="hl kwc">lag3</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag2),</span>
+         <span class="hl kwc">lag4</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag3),</span>
+         <span class="hl kwc">lag5</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag4),</span>
+         <span class="hl kwc">lag6</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag5),</span>
+         <span class="hl kwc">lag7</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag6),</span>
+         <span class="hl kwc">lag8</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag7),</span>
+         <span class="hl kwc">lag9</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag8),</span>
+         <span class="hl kwc">lag10</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag9),</span>
+         <span class="hl kwc">lag11</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag10),</span>
+         <span class="hl kwc">lag12</span> <span class="hl std">=</span> <span class="hl kwd">lag</span><span class="hl std">(lag11),</span>
+         <span class="hl kwc">cumRF</span> <span class="hl std">= (RF</span><span class="hl opt">+</span><span class="hl std">lag1</span><span class="hl opt">+</span><span class="hl std">lag2</span><span class="hl opt">+</span><span class="hl std">lag3</span><span class="hl opt">+</span><span class="hl std">lag4</span><span class="hl opt">+</span><span class="hl std">lag5</span><span class="hl opt">+</span><span class="hl std">lag6</span><span class="hl opt">+</span><span class="hl std">lag7</span><span class="hl opt">+</span><span class="hl std">lag8</span><span class="hl opt">+</span><span class="hl std">lag9</span><span class="hl opt">+</span><span class="hl std">lag10</span><span class="hl opt">+</span><span class="hl std">lag11</span><span class="hl opt">+</span><span class="hl std">lag12)</span><span class="hl opt">/</span><span class="hl num">12</span><span class="hl std">)</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">select</span><span class="hl std">(Date2, cumMktRF, cumRF)</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">na.omit</span><span class="hl std">()</span>
+
+<span class="hl com">#merging the Fama-French with DT</span>
+<span class="hl std">DT</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">merge</span><span class="hl std">(DT, ffData,</span> <span class="hl kwc">by</span><span class="hl std">=</span><span class="hl str">&quot;Date2&quot;</span><span class="hl std">)</span>
+</pre></div>
+</div></div>
+
+<p>Then, we then run the necessary regressions for alpha and beta and assignt the coefficients back into DT </p>
+<div class="chunk" id="unnamed-chunk-5"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">DT</span> <span class="hl kwb">&lt;-</span> <span class="hl std">DT</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">group_by</span><span class="hl std">(PERMCO)</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">mutate</span><span class="hl std">(</span><span class="hl kwc">jensen</span> <span class="hl std">=</span> <span class="hl kwd">lm</span><span class="hl std">((annualReturn</span><span class="hl opt">-</span><span class="hl std">cumRF)</span> <span class="hl opt">~</span> <span class="hl std">cumMktRF)</span><span class="hl opt">$</span><span class="hl std">coefficients[</span><span class="hl num">1</span><span class="hl std">],</span>
+         <span class="hl kwc">betaCAPM</span> <span class="hl std">=</span> <span class="hl kwd">lm</span><span class="hl std">((annualReturn</span><span class="hl opt">-</span><span class="hl std">cumRF)</span> <span class="hl opt">~</span> <span class="hl std">cumMktRF)</span><span class="hl opt">$</span><span class="hl std">coefficients[</span><span class="hl num">2</span><span class="hl std">] )</span><span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">na.omit</span><span class="hl std">()</span>
+</pre></div>
+</div></div>
+
+<p>This next part made me think through how to assign deciles by grouping the date.  Luckily, dplyr is able to handle this amazingly in the group_by() and ntile() functions.  There are a number of other ways to do this, but this is BY FAR the easiest. </p>
+<div class="chunk" id="unnamed-chunk-6"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#Rank portfolios by deciles based on magnitude of Accruals, by Date</span>
+<span class="hl std">DT</span> <span class="hl kwb">&lt;-</span> <span class="hl std">DT</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">group_by</span><span class="hl std">(Date)</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">mutate</span><span class="hl std">(</span><span class="hl kwc">decile</span><span class="hl std">=</span><span class="hl kwd">ntile</span><span class="hl std">(accrualSize,</span> <span class="hl num">10</span><span class="hl std">))</span>  <span class="hl com">#appending the deciles to the datatable</span>
+</pre></div>
+</div></div>
+
+<h3>Empirical Portion </h3>
+<p>Now that we have done many calculations and have a thorough dataframe(38 variables! and still missing a couple) we can start showing the necessary tables.  To keep things simple, I will not print the output and the objects are title pretty clearly.  I might change my mind in the future. </p>
+
+<p>The first bit is the descriptive statistics</p>
+<div class="chunk" id="unnamed-chunk-7"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#Table 1, Panel A</span>
+<span class="hl std">table1PanelA</span> <span class="hl kwb">&lt;-</span> <span class="hl std">DT</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">group_by</span><span class="hl std">(decile)</span> <span class="hl opt">%&gt;%</span>      <span class="hl com">#Grouping by these elements for the summarise below</span>
+  <span class="hl kwd">summarise</span><span class="hl std">(</span><span class="hl kwd">mean</span><span class="hl std">(accrualSize),</span> <span class="hl kwd">median</span><span class="hl std">(accrualSize),</span> <span class="hl kwd">mean</span><span class="hl std">(cashFlowSize),</span> <span class="hl kwd">median</span><span class="hl std">(cashFlowSize),</span> <span class="hl kwd">mean</span><span class="hl std">(earningsSize),</span> <span class="hl kwd">median</span><span class="hl std">(earningsSize))</span> <span class="hl opt">%&gt;%</span>   <span class="hl com">#Creating the summary statistics</span>
+  <span class="hl kwd">arrange</span><span class="hl std">(decile)</span>
+
+<span class="hl com">#Table 1, Panel B</span>
+<span class="hl std">table1PanelB</span> <span class="hl kwb">&lt;-</span> <span class="hl std">DT</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">group_by</span><span class="hl std">(decile)</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">summarise</span><span class="hl std">(</span><span class="hl kwd">mean</span><span class="hl std">(betaCAPM),</span> <span class="hl kwd">mean</span><span class="hl std">(aTotAssets))</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">arrange</span><span class="hl std">(decile)</span> <span class="hl com">#Not seeing any real difference in returns. It could be an element of time that it has dissapeared.</span>
+  <span class="hl com">#I know, this doesnt do exactly what Sloan 1996 shows, but its not really relevant. We do have the returns sorted</span>
+
+<span class="hl com">#Table 1, Panel C</span>
+<span class="hl std">table1PanelC</span> <span class="hl kwb">&lt;-</span> <span class="hl std">DT</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">group_by</span><span class="hl std">(decile)</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">summarise</span><span class="hl std">(</span><span class="hl kwd">mean</span><span class="hl std">(dCA</span><span class="hl opt">/</span><span class="hl std">aTotAssets),</span> <span class="hl kwd">median</span><span class="hl std">(dCA</span><span class="hl opt">/</span><span class="hl std">aTotAssets),</span> <span class="hl kwd">mean</span><span class="hl std">(</span><span class="hl opt">-</span><span class="hl std">dCL</span><span class="hl opt">/</span><span class="hl std">aTotAssets),</span> <span class="hl kwd">median</span><span class="hl std">(</span><span class="hl opt">-</span><span class="hl std">dCL</span><span class="hl opt">/</span><span class="hl std">aTotAssets),</span> <span class="hl kwd">mean</span><span class="hl std">(</span><span class="hl opt">-</span><span class="hl std">DPQ_STD</span><span class="hl opt">/</span><span class="hl std">aTotAssets),</span> <span class="hl kwd">median</span><span class="hl std">(</span><span class="hl opt">-</span><span class="hl std">DPQ_STD</span><span class="hl opt">/</span><span class="hl std">aTotAssets))</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">arrange</span><span class="hl std">(decile)</span>
+</pre></div>
+</div></div>
+
+<p> The next section of code below is the test of H1.  I admit that there is a portion of the table missing because my data when I wrote the code was missing SIC codes.  Not to worry though, it is a pretty easy calculation </p>
+<div class="chunk" id="unnamed-chunk-8"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#H1, earnings predict future earnings</span>
+<span class="hl std">table2PanelA_pooled</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">lm</span><span class="hl std">(DT</span><span class="hl opt">$</span><span class="hl std">earningsSizeLead</span> <span class="hl opt">~</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">earningsSize)</span> <span class="hl com">#uses actual earnings value</span>
+<span class="hl kwd">summary</span><span class="hl std">(table2PanelA_pooled)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Call:
+## lm(formula = DT$earningsSizeLead ~ DT$earningsSize)
+## 
+## Residuals:
+##        Min         1Q     Median         3Q        Max 
+## -2.833e-03 -7.870e-06 -6.800e-07  6.460e-06  2.201e-03 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)     4.557e-06  8.831e-07    5.16 2.54e-07 ***
+## DT$earningsSize 7.381e-01  6.924e-03  106.61  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 6.932e-05 on 6509 degrees of freedom
+## Multiple R-squared:  0.6359,	Adjusted R-squared:  0.6358 
+## F-statistic: 1.137e+04 on 1 and 6509 DF,  p-value: &lt; 2.2e-16
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl std">table2PanelB_pooled</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">lm</span><span class="hl std">(DT</span><span class="hl opt">$</span><span class="hl std">earningsSizeLead</span> <span class="hl opt">~</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">decile)</span> <span class="hl com">#uses decile rankings</span>
+<span class="hl kwd">summary</span><span class="hl std">(table2PanelB_pooled)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Call:
+## lm(formula = DT$earningsSizeLead ~ DT$decile)
+## 
+## Residuals:
+##        Min         1Q     Median         3Q        Max 
+## -0.0015608 -0.0000213 -0.0000031  0.0000133  0.0050353 
+## 
+## Coefficients:
+##               Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  4.688e-05  3.060e-06  15.322  &lt; 2e-16 ***
+## DT$decile   -3.740e-06  4.934e-07  -7.579 3.96e-14 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.0001144 on 6509 degrees of freedom
+## Multiple R-squared:  0.008748,	Adjusted R-squared:  0.008596 
+## F-statistic: 57.44 on 1 and 6509 DF,  p-value: 3.961e-14
+</pre></div>
+<div class="source"><pre class="knitr r">    <span class="hl com">#Can pull out the residuals from the summaries</span>
+    <span class="hl com">#need to pull SIC codes and run the regressions again by industries</span>
+</pre></div>
+</div></div>
+
+<p> Now running the tests on H2. Once I got down to this point, there were a couple of additional things that needed to be calculated.  They are currently not done, but will be once I get a little more time to complete it. </p>
+<div class="chunk" id="unnamed-chunk-9"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#H2(i), accruals and cash flows predict earnings(t+1)</span>
+<span class="hl std">table3PanelA_pooled</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">lm</span><span class="hl std">(DT</span><span class="hl opt">$</span><span class="hl std">earningsSizeLead</span> <span class="hl opt">~</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">accrualSize</span> <span class="hl opt">+</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">cashFlowSize)</span> <span class="hl com">#uses actual earnings value</span>
+<span class="hl kwd">summary</span><span class="hl std">(table3PanelA_pooled)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Call:
+## lm(formula = DT$earningsSizeLead ~ DT$accrualSize + DT$cashFlowSize)
+## 
+## Residuals:
+##        Min         1Q     Median         3Q        Max 
+## -2.848e-03 -7.860e-06 -6.100e-07  6.470e-06  2.191e-03 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)     4.457e-06  8.877e-07   5.021 5.28e-07 ***
+## DT$accrualSize  7.286e-01  1.109e-02  65.671  &lt; 2e-16 ***
+## DT$cashFlowSize 7.365e-01  7.089e-03 103.890  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 6.932e-05 on 6508 degrees of freedom
+## Multiple R-squared:  0.6359,	Adjusted R-squared:  0.6358 
+## F-statistic:  5684 on 2 and 6508 DF,  p-value: &lt; 2.2e-16
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl std">table3PanelB_pooled</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">lm</span><span class="hl std">(DT</span><span class="hl opt">$</span><span class="hl std">earningsSizeLead</span> <span class="hl opt">~</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">decile</span> <span class="hl opt">+</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">cashFlowSize)</span> <span class="hl com">#uses actual earnings value</span>
+<span class="hl kwd">summary</span><span class="hl std">(table3PanelB_pooled)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Call:
+## lm(formula = DT$earningsSizeLead ~ DT$decile + DT$cashFlowSize)
+## 
+## Residuals:
+##        Min         1Q     Median         3Q        Max 
+## -3.151e-03 -1.472e-05 -6.600e-07  1.355e-05  2.364e-03 
+## 
+## Coefficients:
+##                   Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)     -2.541e-05  2.590e-06  -9.813   &lt;2e-16 ***
+## DT$decile        5.843e-06  4.057e-07  14.404   &lt;2e-16 ***
+## DT$cashFlowSize  4.053e-01  6.050e-03  66.999   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 8.8e-05 on 6508 degrees of freedom
+## Multiple R-squared:  0.4134,	Adjusted R-squared:  0.4132 
+## F-statistic:  2293 on 2 and 6508 DF,  p-value: &lt; 2.2e-16
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl com">#Tests of H2(ii)</span>
+<span class="hl std">tab6size</span> <span class="hl kwb">&lt;-</span> <span class="hl std">DT</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">group_by</span><span class="hl std">(decile)</span> <span class="hl opt">%&gt;%</span>
+  <span class="hl kwd">summarise</span><span class="hl std">(</span><span class="hl kwd">mean</span><span class="hl std">(annualReturn))</span> <span class="hl opt">%&gt;%</span> <span class="hl com">#can add the other returns when I have adequate data</span>
+  <span class="hl kwd">arrange</span><span class="hl std">(decile)</span>
+<span class="hl std">hedgeReturn</span> <span class="hl kwb">&lt;-</span> <span class="hl std">tab6size[[</span><span class="hl num">1</span><span class="hl std">,</span><span class="hl num">2</span><span class="hl std">]]</span> <span class="hl opt">-</span> <span class="hl std">tab6size[[</span><span class="hl num">10</span><span class="hl std">,</span><span class="hl num">2</span><span class="hl std">]]</span>
+<span class="hl com">#need to append the Jensen's Alphas</span>
+
+<span class="hl com">#Tests of H2(iii)</span>
+<span class="hl std">table7PanelA</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">lm</span><span class="hl std">(DT</span><span class="hl opt">$</span><span class="hl std">annualReturn</span> <span class="hl opt">~</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">accrualSize)</span>
+<span class="hl kwd">summary</span><span class="hl std">(table7PanelA)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Call:
+## lm(formula = DT$annualReturn ~ DT$accrualSize)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.7405 -0.2475 -0.0373  0.1823  7.1150 
+## 
+## Coefficients:
+##                 Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)      0.10566    0.00663  15.937   &lt;2e-16 ***
+## DT$accrualSize -75.17479   53.23649  -1.412    0.158    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.5287 on 6509 degrees of freedom
+## Multiple R-squared:  0.0003063,	Adjusted R-squared:  0.0001527 
+## F-statistic: 1.994 on 1 and 6509 DF,  p-value: 0.158
+</pre></div>
+<div class="source"><pre class="knitr r">    <span class="hl com">#Then do again for the annualReturn2 and annualReturn3. My initial data was too short for these to be valuable</span>
+    <span class="hl com">#That is why they are commented out in the first section</span>
+
+<span class="hl std">table7PanelB</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">lm</span><span class="hl std">(DT</span><span class="hl opt">$</span><span class="hl std">annualReturn</span> <span class="hl opt">~</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">ACTQ_STD</span> <span class="hl opt">+</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">LCTQ_STD</span> <span class="hl opt">+</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">DPQ_STD)</span>
+<span class="hl kwd">summary</span><span class="hl std">(table7PanelB)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Call:
+## lm(formula = DT$annualReturn ~ DT$ACTQ_STD + DT$LCTQ_STD + DT$DPQ_STD)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.7233 -0.2463 -0.0405  0.1803  7.1231 
+## 
+## Coefficients:
+##               Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  1.026e-01  6.814e-03  15.061   &lt;2e-16 ***
+## DT$ACTQ_STD  2.866e-06  2.200e-06   1.302    0.193    
+## DT$LCTQ_STD  1.654e-06  3.742e-06   0.442    0.658    
+## DT$DPQ_STD  -3.825e-05  4.295e-05  -0.891    0.373    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.5286 on 6507 degrees of freedom
+## Multiple R-squared:  0.001191,	Adjusted R-squared:  0.0007303 
+## F-statistic: 2.586 on 3 and 6507 DF,  p-value: 0.05139
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl std">table7PanelC</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">lm</span><span class="hl std">(DT</span><span class="hl opt">$</span><span class="hl std">annualReturn</span> <span class="hl opt">~</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">accrualSize</span> <span class="hl opt">+</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">aTotAssets</span> <span class="hl opt">+</span> <span class="hl std">DT</span><span class="hl opt">$</span><span class="hl std">betaCAPM)</span>  <span class="hl com">#Need to compute B/M and E/P above to complete</span>
+<span class="hl kwd">summary</span><span class="hl std">(table7PanelC)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Call:
+## lm(formula = DT$annualReturn ~ DT$accrualSize + DT$aTotAssets + 
+##     DT$betaCAPM)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.7681 -0.2455 -0.0346  0.1847  6.8880 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)     9.188e-02  7.066e-03  13.002  &lt; 2e-16 ***
+## DT$accrualSize -7.506e+01  5.311e+01  -1.413   0.1576    
+## DT$aTotAssets   6.100e-10  2.821e-10   2.163   0.0306 *  
+## DT$betaCAPM     4.539e-03  8.075e-04   5.621 1.98e-08 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.5274 on 6507 degrees of freedom
+## Multiple R-squared:  0.005764,	Adjusted R-squared:  0.005306 
+## F-statistic: 12.58 on 3 and 6507 DF,  p-value: 3.402e-08
+</pre></div>
+</div></div>
+
+
+<h3>So there it is.  I hope that was helpful; once you have a hang for dplyr or data.table, working with the data is relatively easy to do. </h3>
+    </div>
+  </section>
+</article>
+    <footer id="footer">
+      <div class="inner">
+        <section class="about">
+          <h4 class="major">Our Sister Websites</h4>
+          <p>This research and code base extends across a number of different projects that are at least tangenially related.</p>
+          <ul class="actions">
+            <li><a href="http://www.harpett.com" target="_blank">Harpett.com - Undergraduate Finance Practice Problems</a></li><br>
+            <li><a href="http://www.chasedehan.com" target="_blank">ChaseDeHan.com - Chase's personal website</a></li><br>
+            <li><a href="http://www.400westasset.com" target="_blank">400 West Asset Management</a></li><br>
+            <li><a href="http://www.uscupstate.edu/academics/johnsoncollege" target="_blank">USC Upstate - Johnson College of Business</a></li><br>
+            <li><a href="https://www.youtube.com/channel/UCtXGgjzGMVSxjwwmHL3eqiA" target="_blank">Chase's Finance Lectures on YouTube</a></li>
+          </ul>
+        </section>
+        <section class="contact-info">
+          <h4 class="major">Get in Touch</h4>
+          <ul class="contact">
+            <li class="fa-envelope"><a href="#">chase@400westasset.com</a></li>
+            <li class="fa-home">PO Box 6882<br />Spartanburg, SC 29304<br />USA</li>
+          </ul>
+        </section>
+      </div>
+      <div class="copyright">
+        <p>&copy; <a href="http://www.chasedehan.com">Chase DeHan</a>. All rights reserved.</p>
+      </div>
+    </footer>
+      <script src="assets/js/jquery.min.js"></script>
+      <script src="assets/js/jquery.scrolly.min.js"></script>
+      <script src="assets/js/skel.min.js"></script>
+      <script src="assets/js/util.js"></script>
+      <!--[if lte IE 8]><script src="assets/js/ie/respond.min.js"></script><![endif]-->
+      <script src="assets/js/main.js"></script>
+</body>
+</html>
